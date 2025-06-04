@@ -56,10 +56,11 @@ check_docker_running() {
     echo "Docker service is running."
 }
 
+GIT_TOKEN=""
+
 clone_or_update_repo() {
     local REPO_URL_BASE="https://github.com/Arcan-Tech/impact-infrastructure-2.git"
     local INSTALL_DIR_DEFAULT="./impact-infrastructure-2"
-    local GIT_TOKEN=""
     local REPO_URL_TO_USE="$REPO_URL_BASE"
 
     read -p "Enter installation directory [default: $INSTALL_DIR_DEFAULT]: " INSTALL_DIR
@@ -105,9 +106,11 @@ clone_or_update_repo() {
     fi
     cd "$INSTALL_DIR"
     echo "Successfully set up repository in $(pwd)"
+    mkdir -p ./docker-conf
+    echo "Created ./docker-conf directory for Docker configuration files."
 }
 
-DOCKER_CONFIG_FILE_PATH="./config.json"
+DOCKER_CONFIG_FILE_PATH="./docker-conf/config.json"
 create_docker_config_json() {
     if [ -f "$DOCKER_CONFIG_FILE_PATH" ]; then
         echo "Docker config file ($DOCKER_CONFIG_FILE_PATH) already exists."
@@ -119,9 +122,7 @@ create_docker_config_json() {
         fi
     fi
 
-    GITHUB_DOCKER_TOKEN= $GIT_TOKEN
-
-    if [ -z "$GITHUB_DOCKER_TOKEN" ]; then
+    if [ -z "$GIT_TOKEN" ]; then
         echo "GitHub token for ghcr.io not provided. Skipping $DOCKER_CONFIG_FILE_PATH creation."
         echo "Watchtower might not be able to update private images from ghcr.io."
         return
@@ -134,7 +135,7 @@ create_docker_config_json() {
         base64_cmd="base64"
     fi
 
-    ENCODED_AUTH=$(echo -n "username:${GITHUB_DOCKER_TOKEN}" | $base64_cmd)
+    ENCODED_AUTH=$(echo -n "username:${GIT_TOKEN}" | $base64_cmd)
 
     cat >"$DOCKER_CONFIG_FILE_PATH" <<EOF
 {
